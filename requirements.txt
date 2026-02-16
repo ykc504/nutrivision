@@ -1,0 +1,22 @@
+fastapi==0.115.0
+uvicorn==0.30.6
+jinja2==3.1.4
+requests==2.32.3
+python-multipart==0.0.9
+pillow==10.4.0
+python-dotenv==1.0.1
+
+# PDF export (weekly report)
+reportlab==4.2.2
+
+# Restaurant menu OCR (requires system Tesseract installed)
+pytesseract==0.3.10
+
+# Optional (free local AI): uncomment if you want the AI coach + photo scan model locally
+# transformers==4.44.2
+# torch  # install latest available (CPU) e.g. pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Auth
+passlib[bcrypt]==1.7.4
+bcrypt==3.2.2  # passlib 1.7.4 compatibility
+itsdangerous==2.2.0  # required for SessionMiddleware signing
