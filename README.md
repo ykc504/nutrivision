@@ -1,4 +1,4 @@
-# NutriVision AI (Hackathon-ready)
+# NutriVision AI
 
 Dark, minimal, browser-based nutrition assistant with:
 
@@ -19,6 +19,7 @@ python main.py
 ```
 
 Open: `http://127.0.0.1:8000`
+or `localhost:8000`
 
 ## 2) Camera barcode scanning (mobile)
 
