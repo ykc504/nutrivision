@@ -1,0 +1,441 @@
+{% extends "_base.html" %}
+{% block content %}
+<div class="pt-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold">Scan</h1>
+      <p class="text-sm text-slate-400">Barcode scan → Open Food Facts. If not found, use Search.</p>
+    </div>
+    <a href="/dashboard" class="text-sm text-slate-300 hover:text-white">Home</a>
+  </div>
+
+  <div class="mt-5 bg-card border border-border rounded-3xl p-5 shadow-soft">
+    <div class="flex items-center justify-between">
+      <p class="text-sm font-semibold">Camera barcode scanner</p>
+      <div class="flex gap-2">
+        <button id="btnStart" class="px-3 py-2 rounded-2xl bg-primary text-bg font-semibold text-sm">Start</button>
+        <button id="btnStop" class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-slate-200 font-semibold text-sm">Stop</button>
+      </div>
+</div>
+
+{% if analysis.disease_panels and analysis.disease_panels|length > 0 %}
+<div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+  {% for d in analysis.disease_panels %}
+    {% set sc = d.score %}
+    {% if sc >= 70 %}
+      {% set badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" %}
+    {% elif sc >= 50 %}
+      {% set badge = "bg-yellow-500/15 text-yellow-200 border-yellow-500/30" %}
+    {% else %}
+      {% set badge = "bg-red-500/15 text-red-300 border-red-500/30" %}
+    {% endif %}
+    <div class="rounded-2xl border border-white/10 bg-black/30 p-4">
+      <div class="text-xs text-slate-400">Disease compatibility</div>
+      <div class="mt-1 flex items-center justify-between">
+        <div class="font-semibold">{{ d.condition }}</div>
+        <span class="text-xs px-2 py-1 rounded-xl border {{ badge }}">{{ d.score }}/100 • {{ d.label }}</span>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="mt-4
+ rounded-3xl overflow-hidden border border-white/10 bg-black/40">
+      <video id="video" class="w-full aspect-[3/4] object-cover"></video>
+    </div>
+
+    <div id="scanStatus" class="mt-3 text-xs text-slate-400">
+      Tip: mobile browsers often require HTTPS to access the camera.
+    </div>
+  </div>
+
+
+  {% if product %}
+  <div class="mt-4 bg-card border border-border rounded-3xl p-5 shadow-soft">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <div class="text-xs text-slate-400">Scan result</div>
+        <h2 class="text-xl font-semibold mt-1">{{ product.name }}</h2>
+        <div class="text-sm text-slate-400 mt-1">{{ product.brand or "" }}</div>
+      </div>
+      <div class="text-right">
+        <div class="text-xs text-slate-400">Score</div>
+        {% set c = analysis.score_color %}
+        <div class="text-3xl font-semibold
+          {% if c == 'green' %} text-emerald-400 {% elif c == 'yellow' %} text-yellow-300 {% else %} text-red-400 {% endif %}">
+          {{ analysis.score }}<span class="text-slate-400 text-base">/100</span>
+        </div>
+      </div>
+</div>
+
+<div class="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4 flex items-center justify-between gap-3">
+  <div class="min-w-0">
+    <div class="text-xs text-slate-400">Instant verdict</div>
+    <div class="mt-1 text-sm font-semibold truncate">{{ analysis.verdict }}</div>
+    <div class="mt-2 text-xs text-slate-500">{{ analysis.nova_blurb }}</div>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="/grocery" class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-xs">Grocery mode</a>
+    <button id="btnSim" class="px-3 py-2 rounded-2xl bg-white text-bg font-semibold text-xs">What if daily?</button>
+  </div>
+</div>
+
+<div id="simBox" class="hidden mt-3 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm">
+  <div class="flex items-center justify-between">
+    <div class="font-semibold">30‑day simulation</div>
+    <button class="text-xs text-slate-400 hover:text-white" onclick="document.getElementById('simBox').classList.add('hidden')">Close</button>
+  </div>
+  <div id="simContent" class="mt-2 text-slate-300"></div>
+</div>
+
+<div class="mt-4 grid grid-cols-3 gap-2">
+
+      <div class="rounded-2xl bg-black/20 border border-white/5 p-3">
+        <div class="text-xs text-slate-400">NOVA</div>
+        <div class="font-semibold">
+          {{ analysis.nova_group or "—" }}
+          <span class="text-xs text-slate-500" title="NOVA 1=unprocessed, 4=ultra-processed">ⓘ</span>
+        </div>
+      </div>
+      <div class="rounded-2xl bg-black/20 border border-white/5 p-3">
+        <div class="text-xs text-slate-400">Sugar</div>
+        <div class="font-semibold">{{ product.sugar or "—" }} g</div>
+      </div>
+      <div class="rounded-2xl bg-black/20 border border-white/5 p-3">
+        <div class="text-xs text-slate-400">Sodium</div>
+        <div class="font-semibold">{{ product.sodium or "—" }} mg</div>
+      </div>
+    </div>
+
+    {% if analysis.condition_warnings %}
+      <div class="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
+        <div class="text-sm font-semibold text-red-300">Personalized warnings</div>
+        <ul class="mt-2 text-sm text-slate-200 space-y-1">
+          {% for w in analysis.condition_warnings %}
+            <li>• {{ w.message }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <div class="mt-4">
+      <details class="rounded-2xl bg-black/20 border border-white/5 p-4">
+        <summary class="cursor-pointer text-sm font-semibold">Additives & concerns</summary>
+        <div class="mt-3 space-y-2 text-sm text-slate-200">
+          {% for a in analysis.additives %}
+            <details class="rounded-2xl bg-black/20 border border-white/5 p-3">
+              <summary class="cursor-pointer font-semibold">{{ a.code }} – {{ a.name }} <span class="text-slate-400 text-xs">({{ a.risk }})</span></summary>
+              <div class="mt-2 text-xs text-slate-300">{{ a.health_concerns or 'Concerns not available yet.' }}</div>
+            </details>
+          {% endfor %}
+          {% if not analysis.additives %}<div class="text-slate-400 text-sm">No additives listed.</div>{% endif %}
+        </div>
+      </details>
+
+      <details class="mt-3 rounded-2xl bg-black/20 border border-white/5 p-4">
+        <summary class="cursor-pointer text-sm font-semibold">Risks (color-coded)</summary>
+        <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+          <div class="rounded-2xl border border-white/5 bg-black/20 p-3">
+            <div class="text-xs text-slate-400">Microplastics</div>
+            {% set mr = analysis.microplastics.level %}
+            <div class="font-semibold {% if mr=='High' %}text-red-400{% elif mr=='Medium' %}text-yellow-300{% else %}text-emerald-400{% endif %}">
+              {{ mr }} <span class="text-slate-400 text-xs">({{ analysis.microplastics.score }}/100)</span>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-white/5 bg-black/20 p-3">
+            <div class="text-xs text-slate-400">Ultra-processing</div>
+            {% set ng = analysis.nova_group or 0 %}
+            <div class="font-semibold {% if ng==4 %}text-red-400{% elif ng==3 %}text-yellow-300{% else %}text-emerald-400{% endif %}">
+              NOVA {{ ng }}
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <form method="post" action="/api/log-food" class="mt-5 grid grid-cols-2 gap-2">
+      <input type="hidden" name="product_name" value="{{ product.name }}">
+      <input type="hidden" name="calories" value="{{ product.calories or 0 }}">
+      <input type="hidden" name="protein" value="{{ product.protein or 0 }}">
+      <input type="hidden" name="carbs" value="{{ product.carbs or 0 }}">
+      <input type="hidden" name="fat" value="{{ product.fat or 0 }}">
+      <input type="hidden" name="sugar" value="{{ product.sugar or 0 }}">
+      <input type="hidden" name="sodium" value="{{ product.sodium or 0 }}">
+      <input type="hidden" name="fiber" value="{{ product.fiber or 0 }}">
+      <input type="hidden" name="additives_count" value="{{ (analysis.additives|length) if analysis.additives else 0 }}">
+      <input type="hidden" name="nova_group" value="{{ analysis.nova_group or 0 }}">
+      <input type="hidden" name="nutri_score" value="{{ analysis.nutri_score or '' }}">
+      <input type="hidden" name="score" value="{{ analysis.score }}">
+      <button class="col-span-2 rounded-2xl bg-primary text-bg font-semibold py-3 hover:opacity-90 transition">Add to Diary</button>
+    </form>
+  </div>
+{% if analysis.swaps and analysis.swaps|length > 0 %}
+<div class="mt-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="text-xs text-slate-400">Better alternatives</div>
+      <div class="text-sm font-semibold">Smart swaps (Yuka‑style)</div>
+    </div>
+    <div class="text-xs text-slate-500">Same category • higher score</div>
+  </div>
+
+  <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+    {% for s in analysis.swaps %}
+      {% set sc = s.score %}
+      {% if sc >= 80 %}
+        {% set badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" %}
+      {% elif sc >= 60 %}
+        {% set badge = "bg-yellow-500/15 text-yellow-200 border-yellow-500/30" %}
+      {% else %}
+        {% set badge = "bg-red-500/15 text-red-300 border-red-500/30" %}
+      {% endif %}
+      <a href="/scan?barcode={{ s.barcode }}" class="rounded-3xl border border-white/10 bg-black/30 p-4 hover:bg-black/40 transition">
+        <div class="flex items-center gap-3">
+          {% if s.image_url %}
+            <img src="{{ s.image_url }}" class="w-12 h-12 rounded-2xl object-cover border border-white/10" />
+          {% else %}
+            <div class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10"></div>
+          {% endif %}
+          <div class="min-w-0">
+            <div class="truncate font-semibold">{{ s.name }}</div>
+            <div class="text-xs text-slate-400 truncate">{{ s.brand or "" }}</div>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center justify-between">
+          <span class="text-xs px-2 py-1 rounded-xl border {{badge}}">{{ sc }}/100</span>
+          <span class="text-xs text-slate-500">NOVA {{ s.nova_group }}</span>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+  {% endif %}
+
+
+  <div class="mt-4 bg-card border border-border rounded-3xl p-5">
+    <p class="text-sm font-semibold">Search by name</p>
+    <form method="get" action="/search" class="mt-3 flex gap-2">
+      <input name="q" placeholder="e.g., Nutella, Cheetos..." class="flex-1 bg-black/20 border border-border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/40">
+      <button class="px-4 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10">Search</button>
+    </form>
+  </div>
+
+
+  {% if product %}
+  <div class="mt-4 bg-card border border-border rounded-3xl p-5 shadow-soft">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <div class="text-xs text-slate-400">Scan result</div>
+        <h2 class="text-xl font-semibold mt-1">{{ product.name }}</h2>
+        <div class="text-sm text-slate-400 mt-1">{{ product.brand or "" }}</div>
+      </div>
+      <div class="text-right">
+        <div class="text-xs text-slate-400">Score</div>
+        {% set c = analysis.score_color %}
+        <div class="text-3xl font-semibold
+          {% if c == 'green' %} text-emerald-400 {% elif c == 'yellow' %} text-yellow-300 {% else %} text-red-400 {% endif %}">
+          {{ analysis.score }}<span class="text-slate-400 text-base">/100</span>
+        </div>
+      </div>
+</div>
+
+<div class="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4 flex items-center justify-between gap-3">
+  <div class="min-w-0">
+    <div class="text-xs text-slate-400">Instant verdict</div>
+    <div class="mt-1 text-sm font-semibold truncate">{{ analysis.verdict }}</div>
+    <div class="mt-2 text-xs text-slate-500">{{ analysis.nova_blurb }}</div>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="/grocery" class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-xs">Grocery mode</a>
+    <button id="btnSim" class="px-3 py-2 rounded-2xl bg-white text-bg font-semibold text-xs">What if daily?</button>
+  </div>
+</div>
+
+<div id="simBox" class="hidden mt-3 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm">
+  <div class="flex items-center justify-between">
+    <div class="font-semibold">30‑day simulation</div>
+    <button class="text-xs text-slate-400 hover:text-white" onclick="document.getElementById('simBox').classList.add('hidden')">Close</button>
+  </div>
+  <div id="simContent" class="mt-2 text-slate-300"></div>
+</div>
+
+<div class="mt-4 grid grid-cols-3 gap-2">
+
+      <div class="rounded-2xl bg-black/20 border border-white/5 p-3">
+        <div class="text-xs text-slate-400">NOVA</div>
+        <div class="font-semibold">
+          {{ analysis.nova_group or "—" }}
+          <span class="text-xs text-slate-500" title="NOVA 1=unprocessed, 4=ultra-processed">ⓘ</span>
+        </div>
+      </div>
+      <div class="rounded-2xl bg-black/20 border border-white/5 p-3">
+        <div class="text-xs text-slate-400">Sugar</div>
+        <div class="font-semibold">{{ product.sugar or "—" }} g</div>
+      </div>
+      <div class="rounded-2xl bg-black/20 border border-white/5 p-3">
+        <div class="text-xs text-slate-400">Sodium</div>
+        <div class="font-semibold">{{ product.sodium or "—" }} mg</div>
+      </div>
+    </div>
+
+    {% if analysis.condition_warnings %}
+      <div class="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
+        <div class="text-sm font-semibold text-red-300">Personalized warnings</div>
+        <ul class="mt-2 text-sm text-slate-200 space-y-1">
+          {% for w in analysis.condition_warnings %}
+            <li>• {{ w.message }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <div class="mt-4">
+      <details class="rounded-2xl bg-black/20 border border-white/5 p-4">
+        <summary class="cursor-pointer text-sm font-semibold">Additives & concerns</summary>
+        <div class="mt-3 space-y-2 text-sm text-slate-200">
+          {% for a in analysis.additives %}
+            <details class="rounded-2xl bg-black/20 border border-white/5 p-3">
+              <summary class="cursor-pointer font-semibold">{{ a.code }} – {{ a.name }} <span class="text-slate-400 text-xs">({{ a.risk }})</span></summary>
+              <div class="mt-2 text-xs text-slate-300">{{ a.health_concerns or 'Concerns not available yet.' }}</div>
+            </details>
+          {% endfor %}
+          {% if not analysis.additives %}<div class="text-slate-400 text-sm">No additives listed.</div>{% endif %}
+        </div>
+      </details>
+
+      <details class="mt-3 rounded-2xl bg-black/20 border border-white/5 p-4">
+        <summary class="cursor-pointer text-sm font-semibold">Risks (color-coded)</summary>
+        <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+          <div class="rounded-2xl border border-white/5 bg-black/20 p-3">
+            <div class="text-xs text-slate-400">Microplastics</div>
+            {% set mr = analysis.microplastics.level %}
+            <div class="font-semibold {% if mr=='High' %}text-red-400{% elif mr=='Medium' %}text-yellow-300{% else %}text-emerald-400{% endif %}">
+              {{ mr }} <span class="text-slate-400 text-xs">({{ analysis.microplastics.score }}/100)</span>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-white/5 bg-black/20 p-3">
+            <div class="text-xs text-slate-400">Ultra-processing</div>
+            {% set ng = analysis.nova_group or 0 %}
+            <div class="font-semibold {% if ng==4 %}text-red-400{% elif ng==3 %}text-yellow-300{% else %}text-emerald-400{% endif %}">
+              NOVA {{ ng }}
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <form method="post" action="/api/log-food" class="mt-5 grid grid-cols-2 gap-2">
+      <input type="hidden" name="product_name" value="{{ product.name }}">
+      <input type="hidden" name="calories" value="{{ product.calories or 0 }}">
+      <input type="hidden" name="protein" value="{{ product.protein or 0 }}">
+      <input type="hidden" name="carbs" value="{{ product.carbs or 0 }}">
+      <input type="hidden" name="fat" value="{{ product.fat or 0 }}">
+      <input type="hidden" name="sugar" value="{{ product.sugar or 0 }}">
+      <input type="hidden" name="sodium" value="{{ product.sodium or 0 }}">
+      <input type="hidden" name="fiber" value="{{ product.fiber or 0 }}">
+      <input type="hidden" name="additives_count" value="{{ (analysis.additives|length) if analysis.additives else 0 }}">
+      <input type="hidden" name="nova_group" value="{{ analysis.nova_group or 0 }}">
+      <input type="hidden" name="nutri_score" value="{{ analysis.nutri_score or '' }}">
+      <input type="hidden" name="score" value="{{ analysis.score }}">
+      <button class="col-span-2 rounded-2xl bg-primary text-bg font-semibold py-3 hover:opacity-90 transition">Add to Diary</button>
+    </form>
+  </div>
+  {% endif %}
+
+
+  <div class="mt-4 bg-card border border-border rounded-3xl p-5">
+    <p class="text-sm font-semibold">Photo meal scan (AI)</p>
+    <p class="text-xs text-slate-400 mt-1">Uploads a meal photo → predicts a food label → fetches nutrition via USDA/OpenFood facts.</p>
+    <form method="post" action="/api/v1/food-scanner" enctype="multipart/form-data" class="mt-3 flex items-center gap-2">
+      <input type="file" name="file" accept="image/*" required class="flex-1 text-sm">
+      <button class="px-4 py-2 rounded-2xl bg-accent text-bg font-semibold">Analyze</button>
+    </form>
+    {% if photo_result %}
+      <div class="mt-4 text-sm text-slate-200">
+        <div class="text-slate-400 text-xs">Result</div>
+        <div class="mt-1 font-semibold">{{ photo_result.label }} <span class="text-slate-400 text-sm">({{ photo_result.confidence }}% confidence)</span></div>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+          <div class="rounded-2xl bg-black/20 border border-white/5 p-3">
+            <div class="text-xs text-slate-400">Calories</div><div class="font-semibold">{{ photo_result.calories }}</div>
+          </div>
+          <div class="rounded-2xl bg-black/20 border border-white/5 p-3">
+            <div class="text-xs text-slate-400">Protein</div><div class="font-semibold">{{ photo_result.protein }} g</div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function(){
+  const btn=document.getElementById('btnSim');
+  if(!btn) return;
+  btn.addEventListener('click', async ()=>{
+    const box=document.getElementById('simBox');
+    const content=document.getElementById('simContent');
+    box.classList.remove('hidden');
+    content.textContent='Loading…';
+    try{
+      const r=await fetch(`/api/simulate/{{ product.barcode }}`);
+      const j=await r.json();
+      if(!j.ok) throw new Error('fail');
+      const s=j.simulation;
+      content.innerHTML = `Per day: <b>${s.per_day.kcal}</b> kcal, <b>${s.per_day.sugar_g}</b>g sugar, <b>${s.per_day.sodium_mg}</b>mg sodium<br>`+
+        `30 days total: <b>${s.totals.kcal}</b> kcal, <b>${s.totals.sugar_g}</b>g sugar, <b>${s.totals.sodium_mg}</b>mg sodium<br>`+
+        `Estimated weight impact: <b>+${s.weight_change_kg_est}</b> kg (rough)<br>`+
+        (s.notes && s.notes.length ? ('<div class="mt-2">'+s.notes.map(x=>`• ${x}`).join('<br>')+'</div>') : '');
+    }catch(e){
+      content.textContent='Could not load simulation.';
+    }
+  });
+})();
+</script>
+
+<script type="module">
+  import { BrowserMultiFormatReader } from "https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm";
+
+  const codeReader = new BrowserMultiFormatReader();
+  const video = document.getElementById("video");
+  const statusEl = document.getElementById("scanStatus");
+  const btnStart = document.getElementById("btnStart");
+  const btnStop = document.getElementById("btnStop");
+
+  let controls = null;
+
+  async function start() {
+    statusEl.textContent = "Starting camera…";
+    try {
+      controls = await codeReader.decodeFromVideoDevice(null, video, async (result, err, c) => {
+        if (result) {
+          const code = result.getText();
+          statusEl.textContent = "Scanned: " + code + " — fetching…";
+          try {
+            await fetch(`/api/v1/scan?barcode=${encodeURIComponent(code)}`, { method: "POST" });
+            window.location.href = `/scan?barcode=${encodeURIComponent(code)}`;
+          } catch (e) {
+            statusEl.textContent = "Scan succeeded but lookup failed. Try Search.";
+          }
+        }
+      });
+      statusEl.textContent = "Scanning… point camera at a barcode.";
+    } catch (e) {
+      statusEl.textContent = "Camera error. Use HTTPS (ngrok) on mobile, or try another browser.";
+      console.error(e);
+    }
+  }
+
+  function stop() {
+    try { if (controls) controls.stop(); } catch(e) {}
+    statusEl.textContent = "Stopped.";
+  }
+
+  btnStart.addEventListener("click", start);
+  btnStop.addEventListener("click", stop);
+</script>
+{% endblock %}

@@ -1,0 +1,163 @@
+
+{% extends "_base.html" %}
+{% set title = "Grocery Mode" %}
+{% block content %}
+<div class="pt-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold">Grocery mode</h1>
+      <p class="text-sm text-slate-400">Scan multiple items quickly. Get a basket health score.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/scan" class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-sm">Single scan</a>
+      <a href="/dashboard" class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-sm">Home</a>
+    </div>
+  </div>
+
+  <div class="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <!-- Scanner -->
+    <div class="bg-card border border-border rounded-3xl p-5 shadow-soft">
+      <div class="flex items-center justify-between">
+        <p class="text-sm font-semibold">Camera barcode scanner</p>
+        <div class="flex gap-2">
+          <button id="btnStart" class="px-3 py-2 rounded-2xl bg-primary text-bg font-semibold text-sm">Start</button>
+          <button id="btnStop" class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-slate-200 font-semibold text-sm">Stop</button>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-3xl overflow-hidden border border-white/10 bg-black/40">
+        <video id="video" class="w-full aspect-[3/4] object-cover"></video>
+      </div>
+
+      <div id="scanStatus" class="mt-3 text-xs text-slate-400">
+        Tip: on mobile, camera requires HTTPS (use ngrok).
+      </div>
+
+      <div class="mt-4 flex items-center justify-between">
+        <div class="text-sm">
+          <div class="text-slate-400">Basket score</div>
+          <div class="text-3xl font-semibold">{{ basket_score }}<span class="text-slate-400 text-base"> / 100</span></div>
+        </div>
+        <form method="post" action="/api/grocery/end" onsubmit="endSession(event)">
+          <input type="hidden" name="session_id" value="{{session_id}}">
+          <button class="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-sm">End session</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Basket list -->
+    <div class="bg-card border border-border rounded-3xl p-5 shadow-soft">
+      <div class="flex items-center justify-between">
+        <p class="text-sm font-semibold">Basket</p>
+        <span class="text-xs text-slate-400">{{ items|length }} items</span>
+      </div>
+
+      <div class="mt-4 space-y-3 max-h-[560px] overflow-y-auto pr-2">
+        {% for it in items %}
+          {% set sc = it.score or 0 %}
+          {% if sc >= 80 %}
+            {% set badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" %}
+            {% set dot = "bg-emerald-400" %}
+            {% set label="Good" %}
+          {% elif sc >= 60 %}
+            {% set badge = "bg-yellow-500/15 text-yellow-200 border-yellow-500/30" %}
+            {% set dot = "bg-yellow-300" %}
+            {% set label="Moderate" %}
+          {% else %}
+            {% set badge = "bg-red-500/15 text-red-300 border-red-500/30" %}
+            {% set dot = "bg-red-400" %}
+            {% set label="Avoid" %}
+          {% endif %}
+          <div class="rounded-2xl border border-white/10 bg-black/30 p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-2 h-2 rounded-full {{dot}}"></div>
+              <div class="min-w-0">
+                <div class="truncate font-semibold">{{ it.name }}</div>
+                <div class="text-xs text-slate-400">NOVA {{ it.nova_group or "?" }} • Sugar {{ (it.sugar or 0)|round(1) }}g • Sodium {{ (it.sodium or 0)|round(0) }}mg</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2 py-1 rounded-xl border {{badge}}">{{ label }}</span>
+              <span class="text-sm font-semibold">{{ sc }}/100</span>
+            </div>
+          </div>
+        {% endfor %}
+        {% if items|length == 0 %}
+          <div class="text-sm text-slate-400">Scan items to build your basket.</div>
+        {% endif %}
+      </div>
+
+      <div class="mt-4 text-xs text-slate-400">
+        Basket score is the average of item scores (personalized to your profile).
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  import { BrowserMultiFormatReader } from "https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm";
+
+  const sessionId = {{ session_id }};
+  const codeReader = new BrowserMultiFormatReader();
+  const video = document.getElementById("video");
+  const statusEl = document.getElementById("scanStatus");
+  const btnStart = document.getElementById("btnStart");
+  const btnStop = document.getElementById("btnStop");
+
+  let controls = null;
+  let lastCode = null;
+  let lastAt = 0;
+
+  async function addToBasket(code) {
+    const body = new URLSearchParams();
+    body.set("session_id", sessionId);
+    body.set("barcode", code);
+
+    await fetch("/api/grocery/add", { method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"}, body });
+  }
+
+  async function start() {
+    statusEl.textContent = "Starting camera…";
+    try {
+      controls = await codeReader.decodeFromVideoDevice(null, video, async (result) => {
+        if (result) {
+          const code = result.getText();
+          const now = Date.now();
+          if (code === lastCode && (now - lastAt) < 2500) return;
+          lastCode = code; lastAt = now;
+
+          statusEl.textContent = "Scanned: " + code + " — adding…";
+          try {
+            await addToBasket(code);
+            window.location.reload();
+          } catch(e) {
+            statusEl.textContent = "Could not add. Try again.";
+          }
+        }
+      });
+      statusEl.textContent = "Scanning… point camera at a barcode.";
+    } catch (e) {
+      statusEl.textContent = "Camera error. Use HTTPS (ngrok) on mobile, or try another browser.";
+      console.error(e);
+    }
+  }
+
+  function stop() {
+    try { if (controls) controls.stop(); } catch(e) {}
+    statusEl.textContent = "Stopped.";
+  }
+
+  btnStart.addEventListener("click", start);
+  btnStop.addEventListener("click", stop);
+
+  window.endSession = async function(e){
+    e.preventDefault();
+    const body = new URLSearchParams();
+    body.set("session_id", sessionId);
+    await fetch("/api/grocery/end", { method:"POST", headers: {"Content-Type":"application/x-www-form-urlencoded"}, body });
+    window.location.href="/dashboard";
+  }
+</script>
+{% endblock %}

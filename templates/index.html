@@ -1,1 +1,86 @@
+{% extends "_base.html" %}
+{% block content %}
+<style>
+  .bg-anim {
+    background: radial-gradient(1200px 600px at 20% 10%, rgba(96,165,250,0.22), transparent 60%),
+                radial-gradient(900px 500px at 85% 20%, rgba(52,211,153,0.18), transparent 55%),
+                radial-gradient(700px 500px at 40% 90%, rgba(248,113,113,0.12), transparent 60%),
+                linear-gradient(180deg, #0B0F18 0%, #070A12 100%);
+  }
+  @keyframes floaty { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-6px);} }
+  .floaty { animation: floaty 4.5s ease-in-out infinite; }
+  .glow { box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 30px 80px rgba(0,0,0,0.55); }
+</style>
 
+<div class="min-h-[calc(100vh-2rem)] bg-anim rounded-3xl border border-white/5 mt-4 p-6 relative overflow-hidden">
+  <div class="absolute inset-0 pointer-events-none opacity-40" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0); background-size: 22px 22px;"></div>
+
+  <div class="relative">
+    <div class="flex items-center justify-between">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+        <span class="w-2 h-2 rounded-full bg-primary"></span>
+        <span class="text-xs text-slate-300">NutriVision</span>
+      </div>
+      <div class="text-xs text-slate-400">AI food intelligence • health-first</div>
+    </div>
+
+    <div class="mt-10 text-center">
+      <h1 class="text-4xl font-semibold tracking-tight">
+        Scan food. <span class="text-primary">Know the risks.</span> Eat smarter.
+      </h1>
+      <p class="mt-3 text-slate-300/90 text-sm max-w-md mx-auto">
+        Barcode + photo scans with NOVA, additives, allergens, and condition-aware warnings. No paid GPT required.
+      </p>
+
+      <div class="mt-6 flex items-center justify-center gap-3">
+        <a href="/register" class="rounded-2xl bg-primary text-bg font-semibold px-5 py-3 hover:opacity-90 transition">Get started</a>
+        <a href="/login" class="rounded-2xl bg-white/5 border border-white/10 text-slate-200 font-semibold px-5 py-3 hover:bg-white/10 transition">Sign in</a>
+      </div>
+
+      <div class="mt-10 mx-auto max-w-md floaty">
+        <div class="glow rounded-3xl bg-card border border-border p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-400">Example scan</p>
+              <p class="text-lg font-semibold">Snack product</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-slate-400">Score</p>
+              <p class="text-2xl font-semibold text-danger">32<span class="text-slate-400 text-base">/100</span></p>
+            </div>
+          </div>
+          <div class="mt-4 grid grid-cols-3 gap-2">
+            <div class="rounded-2xl bg-black/20 border border-white/5 p-3 text-left">
+              <p class="text-[11px] text-slate-400">Sugar</p>
+              <p class="text-sm font-semibold">High</p>
+            </div>
+            <div class="rounded-2xl bg-black/20 border border-white/5 p-3 text-left">
+              <p class="text-[11px] text-slate-400">NOVA</p>
+              <p class="text-sm font-semibold">4</p>
+            </div>
+            <div class="rounded-2xl bg-black/20 border border-white/5 p-3 text-left">
+              <p class="text-[11px] text-slate-400">Additives</p>
+              <p class="text-sm font-semibold">8</p>
+            </div>
+          </div>
+          <p class="mt-4 text-xs text-slate-400">
+            Personalized alerts: diabetes + hypertension + allergies.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 gap-3">
+      <div class="rounded-3xl bg-white/5 border border-white/10 p-5">
+        <p class="text-sm font-semibold">What users actually want</p>
+        <ul class="mt-3 text-sm text-slate-300/90 space-y-2">
+          <li>• “Is this bad for me?”</li>
+          <li>• “What should I eat instead?”</li>
+          <li>• “Will this affect my condition?”</li>
+          <li>• Fast answers. Clear colors. No jargon.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

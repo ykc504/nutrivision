@@ -1,0 +1,57 @@
+{% extends "_base.html" %}
+{% set title = "AI Coach" %}
+
+{% block content %}
+  <div class="pt-6 flex items-center justify-between">
+    <div class="font-semibold text-lg">AI Coach</div>
+    <a href="/dashboard" class="text-slate-400 text-sm">Back</a>
+  </div>
+
+  <div class="mt-4 bg-card border border-border rounded-3xl p-5">
+    <div id="chat" class="h-[360px] overflow-y-auto space-y-3 pr-1"></div>
+
+    <form id="f" class="mt-4 flex items-center gap-2">
+      <input id="msg" placeholder="Ask: 'Is this ultra-processed?'"
+             class="flex-1 bg-card2 border border-border rounded-2xl px-4 py-3 outline-none" />
+      <button class="px-4 py-3 rounded-2xl bg-white text-bg font-semibold">Send</button>
+    </form>
+    <div class="text-xs text-slate-500 mt-3">
+      AI-based advice and recommendations. Not a substitute for professional dietary guidance. Use as a helpful tool, but consult a nutritionist for personalized advice.
+    </div>
+  </div>
+
+  <!-- ProProfs Chat (optional): paste your embed snippet below. -->
+  <!--
+  <script>...</script>
+  -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const chat = document.getElementById('chat');
+  function bubble(text, side='ai'){
+    const d = document.createElement('div');
+    d.className = side==='ai' ? 'bg-card2 border border-border rounded-3xl p-4 text-slate-200 max-w-[90%]' : 'bg-white text-bg rounded-3xl p-4 ml-auto max-w-[90%]';
+    d.textContent = text;
+    chat.appendChild(d);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  bubble('Tell me what you ate today, or paste ingredients. I will flag NOVA, additives, sugar/sodium, and simple swaps.');
+
+  document.getElementById('f').onsubmit = async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('msg').value.trim();
+    if(!msg) return;
+    bubble(msg, 'user');
+    document.getElementById('msg').value = '';
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: 'message=' + encodeURIComponent(msg)
+    });
+    const data = await res.json();
+    bubble(data.reply || '');
+  };
+</script>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "_base.html" %}
+{% set title = "Menu Scan" %}
+
+{% block content %}
+  <div class="pt-6 flex items-center justify-between">
+    <div class="font-semibold text-lg">Restaurant Menu OCR</div>
+    <a href="/dashboard" class="text-slate-400 text-sm">Back</a>
+  </div>
+
+  <div class="mt-4 bg-card border border-border rounded-3xl p-5">
+    <div class="text-slate-300 text-sm">
+      Upload a menu photo. We'll extract items and rank them for your profile.
+      <span class="text-slate-500"></span>
+    </div>
+    <input id="menuPhoto" type="file" accept="image/*" class="mt-4 w-full text-sm" />
+    <button id="btnMenu" class="mt-3 w-full py-3 rounded-2xl bg-white text-bg font-semibold">Scan Menu</button>
+  </div>
+
+  <div id="menuOut" class="mt-4"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const out = document.getElementById('menuOut');
+  const badge = (level) => {
+    if(level==='good') return '<span class="px-2 py-1 rounded-full text-[11px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">Recommended</span>';
+    if(level==='caution') return '<span class="px-2 py-1 rounded-full text-[11px] bg-yellow-500/10 border border-yellow-500/20 text-yellow-300">Caution</span>';
+    return '<span class="px-2 py-1 rounded-full text-[11px] bg-red-500/10 border border-red-500/20 text-red-300">Avoid</span>';
+  };
+  document.getElementById('btnMenu').onclick = async () => {
+    const f = document.getElementById('menuPhoto').files[0];
+    if(!f) return;
+    out.innerHTML = `<div class="text-slate-400 text-sm">Running OCR…</div>`;
+    const fd = new FormData();
+    fd.append('image', f);
+    const res = await fetch('/api/menu/ocr', { method:'POST', body: fd });
+    const data = await res.json();
+
+    const items = data.items || [];
+    const recs = data.recommendations || [];
+
+    out.innerHTML = `
+      <div class="bg-card border border-border rounded-3xl p-5">
+        <div class="font-semibold">Top picks for you</div>
+        <div class="mt-3 space-y-3">
+          ${recs.map(r=>`
+            <div class="bg-card2 border border-border rounded-3xl p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="font-semibold truncate">${r.item}</div>
+                  <div class="text-slate-400 text-sm mt-1">Score <span class="font-semibold">${r.score} / 100</span></div>
+                </div>
+                ${badge(r.level)}
+              </div>
+              <details class="mt-3">
+                <summary class="cursor-pointer text-sm text-slate-300">Why?</summary>
+                <ul class="mt-2 text-sm text-slate-400 space-y-1">${(r.reasons||[]).map(x=>`<li>• ${x}</li>`).join('')}</ul>
+              </details>
+            </div>
+          `).join('') || `<div class="text-slate-400 text-sm">No recommendations found.</div>`}
+        </div>
+      </div>
+
+      <div class="mt-4 bg-card border border-border rounded-3xl p-5">
+        <div class="font-semibold">Extracted items</div>
+        <div class="mt-3 text-slate-300 text-sm whitespace-pre-line">
+          ${items.map(i=>`• ${i}`).join('\n') || 'No text extracted.'}
+        </div>
+      </div>
+    `;
+  };
+</script>
+{% endblock %}
